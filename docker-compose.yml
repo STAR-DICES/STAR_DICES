@@ -1,0 +1,73 @@
+version: "3.7"
+services:
+
+  load_balancer: 
+    image: imkulikov/nginx-sticky:latest
+    container_name: load_balancer
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - 80:80
+    depends_on:
+    - gateway
+
+  rabbit:
+    image: rabbitmq
+    expose:
+    - 5462
+    volumes:
+    - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.config
+
+
+  auth:
+    build: STAR_DICES-auth/
+    expose:
+    - 5000
+
+  follows:
+    build: STAR_DICES-follows/
+    expose:
+    - 5000
+
+  stories:
+    build: STAR_DICES-stories/
+    expose:
+    - 5000
+    - 5672
+    depends_on:
+    - follows
+    - rabbit
+
+  rank:
+    build: STAR_DICES-rank/
+    expose:
+    - 5000
+    depends_on:
+    - stories
+
+  reactions:
+    build: STAR_DICES-reactions/
+    expose:
+    - 5000
+    depends_on:
+    - stories
+
+  stats:
+    build: STAR_DICES-stats/
+    expose:
+    - 5000
+    depends_on:
+    - stories
+    
+  gateway:
+    build: STAR_DICES-gateway/
+    depends_on:
+    - auth
+    - follows
+    - reactions
+    - rank
+    - stats
+    - stories
+    expose:
+    - 5000
+  
